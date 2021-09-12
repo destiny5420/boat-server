@@ -1,0 +1,134 @@
+const { MongoClient } = require("mongodb");
+const uri = `mongodb+srv://player:${process.env.MONGODB_PASSWORD}@leaderboard.am973.mongodb.net/${process.env.MONGODB_DATABASE}?retryWrites=true&w=majority`;
+const dbName = process.env.MONGODB_DATABASE;
+const client = new MongoClient(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+async function register(data) {
+  try {
+    await client.connect();
+
+    const db = client.db(dbName);
+    const leaderboardCl = db.collection("leaderboard");
+
+    // check if exist user
+    const query = {
+      name: data.name,
+    };
+    const cursor = await leaderboardCl.find(query, null);
+
+    if ((await cursor.count()) === 0) {
+      const document = {
+        name: data.name,
+        score: 0,
+      };
+
+      await leaderboardCl.insertOne(document);
+
+      return `register successfully!`;
+    } else {
+      return `the user has existed!`;
+    }
+  } catch (error) {
+    console.log(err.stack);
+    return err.stack;
+  } finally {
+    await client.close();
+  }
+}
+
+async function update(data) {
+  try {
+    await client.connect();
+
+    const db = client.db(dbName);
+    const leaderboardCl = db.collection("leaderboard");
+
+    const filter = {
+      name: data.name,
+    };
+
+    const updateDocument = {
+      $set: {
+        score: data.score,
+      },
+    };
+
+    const result = await leaderboardCl.findOneAndUpdate(filter, updateDocument);
+    if (result.value) {
+      return {
+        result: `update data successfully!`,
+        success: true,
+      };
+    } else {
+      return {
+        result: `This user does not exist!`,
+        success: false,
+      };
+    }
+  } catch (error) {
+    console.log(err.stack);
+    return {
+      result: err.stack,
+      success: false,
+    };
+  } finally {
+    await client.close();
+  }
+}
+
+async function find(data) {
+  try {
+    await client.connect();
+
+    const db = client.db(dbName);
+    const leaderboardCl = db.collection("leaderboard");
+
+    // query for leaderboard that have a score less than 1500
+    // const query = {
+    //   score: {
+    //     $lt: 2100,
+    //   },
+    // };
+
+    const options = {
+      // sort returned documents in ascending order by title (A->Z)
+      sort: { score: -1 },
+    };
+
+    const cursor = leaderboardCl.find(null, options).limit(3);
+
+    if ((await cursor.count()) === 0) {
+      console.log(`No document found!`);
+    }
+
+    const datas = [];
+    await cursor.forEach((e) => {
+      datas.push({
+        name: e.name,
+        score: e.score,
+      });
+    });
+
+    console.log(`find done!`);
+    return datas;
+  } catch (error) {
+    console.log(err.stack);
+  } finally {
+    await client.close();
+  }
+}
+
+module.exports = {
+  register: async (data) => {
+    return await register(data);
+  },
+  update: async (data) => {
+    return await update(data);
+  },
+  find: async (data) => {
+    return await find(data);
+  },
+};
