@@ -56,18 +56,41 @@ async function update(data) {
       },
     };
 
-    const result = await leaderboardCl.findOneAndUpdate(filter, updateDocument);
-    if (result.value) {
+    const options = {
+      projection: { _id: 0, name: 1, score: 1 },
+    };
+
+    const findResult = await leaderboardCl.findOne(filter, options);
+
+    if (!findResult) {
       return {
-        result: `update data successfully!`,
-        success: true,
-      };
-    } else {
-      return {
-        result: `This user does not exist!`,
         success: false,
+        result: "This user does not exist!",
+        data: null,
       };
     }
+
+    if (data.score <= findResult.score) {
+      return {
+        success: false,
+        result: "The score does not exceed the leaderboard!",
+        data: {
+          name: data.name,
+          score: data.score,
+        },
+      };
+    }
+
+    const r = await leaderboardCl.findOneAndUpdate(filter, updateDocument);
+
+    return {
+      success: true,
+      result: `update score to leaderboard successfully!`,
+      data: {
+        name: data.name,
+        score: data.score,
+      },
+    };
   } catch (error) {
     console.log(err.stack);
     return {
@@ -79,7 +102,7 @@ async function update(data) {
   }
 }
 
-async function find(data) {
+async function find() {
   try {
     await client.connect();
 
@@ -112,7 +135,6 @@ async function find(data) {
       });
     });
 
-    console.log(`find done!`);
     return datas;
   } catch (error) {
     console.log(err.stack);
@@ -128,7 +150,22 @@ module.exports = {
   update: async (data) => {
     return await update(data);
   },
-  find: async (data) => {
-    return await find(data);
+  find: async () => {
+    return await find();
+  },
+  gameOver: async (data) => {
+    const playerData = await update(data);
+    console.log(`playerData / data: `, playerData.data);
+
+    const findData = await find();
+    console.log(`findData: `, findData);
+
+    return {
+      success: true,
+      result: {
+        topUsers: findData,
+        player: playerData.data,
+      },
+    };
   },
 };
