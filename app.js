@@ -6,10 +6,7 @@ const app = express();
 
 const cors = require("cors");
 const corsOptions = {
-  origin: [
-    // process.env.ACCESS_CONTROL_ALLOW_ORIGIN
-    "*",
-  ],
+  origin: "*",
   methods: "GET,POST,DELETE,PUT,PATCH,OPTIONS,HEAD,FETCH",
   allowedHeaders: ["Content-Type", "Authorization"],
 };
