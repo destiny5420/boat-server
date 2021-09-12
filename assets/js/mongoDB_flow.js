@@ -135,9 +135,17 @@ async function find() {
       });
     });
 
-    return datas;
+    return {
+      message: "find the leaderboard successfully!",
+      success: true,
+      result: datas,
+    };
   } catch (error) {
     console.log(err.stack);
+    return {
+      message: err.stack,
+      success: false,
+    };
   } finally {
     await client.close();
   }

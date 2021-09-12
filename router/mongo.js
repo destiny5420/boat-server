@@ -6,16 +6,10 @@ router.get("/find", function (request, response) {
   mongoDBFlow
     .find()
     .then((result) => {
-      response.status(200).send({
-        result: result,
-        success: true,
-      });
+      response.status(200).send(result);
     })
     .catch((err) => {
-      response.status(200).send({
-        success: false,
-        message: err,
-      });
+      response.status(200).send(err);
     });
 });
 
