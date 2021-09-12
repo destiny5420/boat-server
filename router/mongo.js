@@ -35,7 +35,7 @@ router.post("/update", function (request, response) {
     });
 });
 
-router.post("/find", function (request, response) {
+router.get("/find", function (request, response) {
   mongoDBFlow
     .find()
     .then((result) => {
