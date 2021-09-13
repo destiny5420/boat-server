@@ -140,7 +140,7 @@ async function find() {
       success: true,
       result: datas,
     };
-  } catch (error) {
+  } catch (err) {
     console.log(err.stack);
     return {
       message: err.stack,
