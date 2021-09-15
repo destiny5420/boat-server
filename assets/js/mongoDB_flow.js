@@ -1,42 +1,40 @@
-const { MongoClient } = require("mongodb");
+const mongoose = require("mongoose");
+const LeaderBoard = require("./models/leaderboard");
 const uri = `mongodb+srv://player:${process.env.MONGODB_PASSWORD}@leaderboard.am973.mongodb.net/${process.env.MONGODB_DATABASE}?retryWrites=true&w=majority`;
 const dbName = process.env.MONGODB_DATABASE;
-const client = new MongoClient(uri, {
+
+mongoose.connect(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
-async function register(data) {
-  try {
-    await client.connect();
+const db = mongoose.connection;
+db.on("error", (err) => {
+  console.err(`connection error`, error);
+});
+db.once("open", (db) => console.log(`Connected to MonoDB`));
 
-    const db = client.db(dbName);
-    const leaderboardCl = db.collection("leaderboard");
+function register(data) {
+  const dataObj = {
+    name: data.name,
+  };
+  return new Promise((resolve, reject) => {
+    LeaderBoard.create(dataObj, (err, user) => {
+      if (err) {
+        reject({
+          success: false,
+          result: err,
+        });
+      }
 
-    // check if exist user
-    const query = {
-      name: data.name,
-    };
-    const cursor = await leaderboardCl.find(query, null);
+      console.log(`register successfully! / data: `, user);
 
-    if ((await cursor.count()) === 0) {
-      const document = {
-        name: data.name,
-        score: 0,
-      };
-
-      await leaderboardCl.insertOne(document);
-
-      return `register successfully!`;
-    } else {
-      return `the user has existed!`;
-    }
-  } catch (error) {
-    console.log(err.stack);
-    return err.stack;
-  } finally {
-    await client.close();
-  }
+      return resolve({
+        success: true,
+        result: "register successfully!",
+      });
+    });
+  });
 }
 
 async function update(data) {
