@@ -10,7 +10,7 @@ mongoose.connect(uri, {
 
 const db = mongoose.connection;
 db.on("error", (err) => {
-  console.err(`connection error`, error);
+  console.err(`connection error`, err);
 });
 db.once("open", (db) => console.log(`Connected to MonoDB`));
 
@@ -39,113 +39,57 @@ function register(data) {
 
 async function update(data) {
   try {
-    await client.connect();
-
-    const db = client.db(dbName);
-    const leaderboardCl = db.collection("leaderboard");
-
     const filter = {
       name: data.name,
     };
 
-    const updateDocument = {
-      $set: {
-        score: data.score,
-      },
+    const update = {
+      score: data.score,
     };
 
-    const options = {
-      projection: { _id: 0, name: 1, score: 1 },
-    };
-
-    const findResult = await leaderboardCl.findOne(filter, options);
-
-    if (!findResult) {
-      return {
-        success: false,
-        result: "This user does not exist!",
-        data: null,
-      };
-    }
-
-    if (data.score <= findResult.score) {
-      return {
-        success: false,
-        result: "The score does not exceed the leaderboard!",
-        data: {
-          name: data.name,
-          score: data.score,
-        },
-      };
-    }
-
-    const r = await leaderboardCl.findOneAndUpdate(filter, updateDocument);
+    const doc = await LeaderBoard.findOneAndUpdate(filter, update);
+    console.log(`doc / name: ${doc.name} / age: ${doc.score}`);
 
     return {
-      success: true,
-      result: `update score to leaderboard successfully!`,
-      data: {
-        name: data.name,
-        score: data.score,
-      },
+      name: doc.name,
+      score: doc.score,
     };
-  } catch (error) {
-    console.log(err.stack);
+  } catch (err) {
     return {
       result: err.stack,
       success: false,
     };
-  } finally {
-    await client.close();
   }
 }
 
 async function find() {
   try {
-    await client.connect();
-
-    const db = client.db(dbName);
-    const leaderboardCl = db.collection("leaderboard");
-
-    // query for leaderboard that have a score less than 1500
-    // const query = {
-    //   score: {
-    //     $lt: 2100,
-    //   },
-    // };
-
-    const options = {
-      // sort returned documents in ascending order by title (A->Z)
-      sort: { score: -1 },
+    const sortQuery = {
+      score: -1,
     };
+    const cursor = await LeaderBoard.find().sort(sortQuery).limit(3);
 
-    const cursor = leaderboardCl.find(null, options).limit(3);
+    const resultObj = [];
+    for (let i = 0; i < cursor.length; i++) {
+      const data = await LeaderBoard.findById(cursor[i]._id);
 
-    if ((await cursor.count()) === 0) {
-      console.log(`No document found!`);
+      resultObj.push({
+        name: data.name,
+        score: data.score,
+      });
     }
 
-    const datas = [];
-    await cursor.forEach((e) => {
-      datas.push({
-        name: e.name,
-        score: e.score,
-      });
-    });
+    console.log(`resultObj: `, resultObj);
 
     return {
-      message: "find the leaderboard successfully!",
       success: true,
-      result: datas,
+      result: resultObj,
     };
   } catch (err) {
-    console.log(err.stack);
     return {
       message: err.stack,
       success: false,
     };
-  } finally {
-    await client.close();
   }
 }
 
@@ -161,10 +105,8 @@ module.exports = {
   },
   gameOver: async (data) => {
     const playerData = await update(data);
-    console.log(`playerData / data: `, playerData.data);
 
     const findData = await find();
-    console.log(`findData: `, findData);
 
     return {
       success: true,
