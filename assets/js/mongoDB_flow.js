@@ -14,27 +14,29 @@ db.on("error", (err) => {
 });
 db.once("open", (db) => console.log(`Connected to MonoDB`));
 
-function register(data) {
+async function register(data) {
   const dataObj = {
     name: data.name,
   };
-  return new Promise((resolve, reject) => {
-    LeaderBoard.create(dataObj, (err, user) => {
-      if (err) {
-        reject({
-          success: false,
-          result: err,
-        });
-      }
 
-      console.log(`register successfully! / data: `, user);
+  const findObj = await LeaderBoard.find(dataObj);
+  console.log(`findObj: `, findObj);
 
-      return resolve({
-        success: true,
-        result: "register successfully!",
-      });
-    });
-  });
+  // The user already exits
+  if (findObj.length !== 0) {
+    return {
+      success: true,
+      result: "The user already exits",
+    };
+  }
+
+  const createObj = await LeaderBoard.create(dataObj);
+  console.log(`createObj: `, createObj);
+
+  return {
+    success: true,
+    result: "register successfully!",
+  };
 }
 
 async function update(data) {
@@ -48,7 +50,7 @@ async function update(data) {
     };
 
     const doc = await LeaderBoard.findOneAndUpdate(filter, update);
-    console.log(`doc / name: ${doc.name} / age: ${doc.score}`);
+    console.log(`doc / name: ${doc.name} / score: ${doc.score}`);
 
     return {
       name: doc.name,
