@@ -55,10 +55,9 @@ async function update(data) {
       return { name: findObj[0].name, score: findObj[0].score };
     } else {
       const doc = await LeaderBoard.findOneAndUpdate(filter, update);
-
       return {
-        name: doc.name,
-        score: doc.score,
+        name: data.name,
+        score: data.score,
       };
     }
   } catch (err) {
