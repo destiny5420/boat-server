@@ -49,13 +49,18 @@ async function update(data) {
       score: data.score,
     };
 
-    const doc = await LeaderBoard.findOneAndUpdate(filter, update);
-    console.log(`doc / name: ${doc.name} / score: ${doc.score}`);
+    const findObj = await LeaderBoard.find(filter);
 
-    return {
-      name: doc.name,
-      score: doc.score,
-    };
+    if (data.score <= findObj[0].score && findObj.length === 1) {
+      return { name: findObj[0].name, score: findObj[0].score };
+    } else {
+      const doc = await LeaderBoard.findOneAndUpdate(filter, update);
+
+      return {
+        name: doc.name,
+        score: doc.score,
+      };
+    }
   } catch (err) {
     return {
       result: err.stack,
