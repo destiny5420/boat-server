@@ -1,123 +1,101 @@
-const { MongoClient } = require("mongodb");
+const mongoose = require("mongoose");
+const LeaderBoard = require("./models/leaderboard");
 const uri = `mongodb+srv://player:${process.env.MONGODB_PASSWORD}@leaderboard.am973.mongodb.net/${process.env.MONGODB_DATABASE}?retryWrites=true&w=majority`;
 const dbName = process.env.MONGODB_DATABASE;
-const client = new MongoClient(uri, {
+
+mongoose.connect(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
+const db = mongoose.connection;
+db.on("error", (err) => {
+  console.err(`connection error`, err);
+});
+db.once("open", (db) => console.log(`Connected to MonoDB`));
+
 async function register(data) {
-  try {
-    await client.connect();
+  const dataObj = {
+    name: data.name,
+  };
 
-    const db = client.db(dbName);
-    const leaderboardCl = db.collection("leaderboard");
+  const findObj = await LeaderBoard.find(dataObj);
+  console.log(`findObj: `, findObj);
 
-    // check if exist user
-    const query = {
-      name: data.name,
+  // The user already exits
+  if (findObj.length !== 0) {
+    return {
+      success: true,
+      result: "The user already exits",
     };
-    const cursor = await leaderboardCl.find(query, null);
-
-    if ((await cursor.count()) === 0) {
-      const document = {
-        name: data.name,
-        score: 0,
-      };
-
-      await leaderboardCl.insertOne(document);
-
-      return `register successfully!`;
-    } else {
-      return `the user has existed!`;
-    }
-  } catch (error) {
-    console.log(err.stack);
-    return err.stack;
-  } finally {
-    await client.close();
   }
+
+  const createObj = await LeaderBoard.create(dataObj);
+  console.log(`createObj: `, createObj);
+
+  return {
+    success: true,
+    result: "register successfully!",
+  };
 }
 
 async function update(data) {
   try {
-    await client.connect();
-
-    const db = client.db(dbName);
-    const leaderboardCl = db.collection("leaderboard");
-
     const filter = {
       name: data.name,
     };
 
-    const updateDocument = {
-      $set: {
-        score: data.score,
-      },
+    const update = {
+      score: data.score,
     };
 
-    const result = await leaderboardCl.findOneAndUpdate(filter, updateDocument);
-    if (result.value) {
-      return {
-        result: `update data successfully!`,
-        success: true,
-      };
+    const findObj = await LeaderBoard.find(filter);
+
+    if (data.score <= findObj[0].score && findObj.length === 1) {
+      return { name: findObj[0].name, score: findObj[0].score };
     } else {
+      const doc = await LeaderBoard.findOneAndUpdate(filter, update);
       return {
-        result: `This user does not exist!`,
-        success: false,
+        name: data.name,
+        score: data.score,
       };
     }
-  } catch (error) {
-    console.log(err.stack);
+  } catch (err) {
     return {
       result: err.stack,
       success: false,
     };
-  } finally {
-    await client.close();
   }
 }
 
-async function find(data) {
+async function find() {
   try {
-    await client.connect();
-
-    const db = client.db(dbName);
-    const leaderboardCl = db.collection("leaderboard");
-
-    // query for leaderboard that have a score less than 1500
-    // const query = {
-    //   score: {
-    //     $lt: 2100,
-    //   },
-    // };
-
-    const options = {
-      // sort returned documents in ascending order by title (A->Z)
-      sort: { score: -1 },
+    const sortQuery = {
+      score: -1,
     };
+    const cursor = await LeaderBoard.find().sort(sortQuery).limit(3);
 
-    const cursor = leaderboardCl.find(null, options).limit(3);
+    const resultObj = [];
+    for (let i = 0; i < cursor.length; i++) {
+      const data = await LeaderBoard.findById(cursor[i]._id);
 
-    if ((await cursor.count()) === 0) {
-      console.log(`No document found!`);
+      resultObj.push({
+        name: data.name,
+        score: data.score,
+      });
     }
 
-    const datas = [];
-    await cursor.forEach((e) => {
-      datas.push({
-        name: e.name,
-        score: e.score,
-      });
-    });
+    console.log(`resultObj: `, resultObj);
 
-    console.log(`find done!`);
-    return datas;
-  } catch (error) {
-    console.log(err.stack);
-  } finally {
-    await client.close();
+    return {
+      success: true,
+      result: resultObj,
+    };
+  } catch (err) {
+    return {
+      message: err.stack,
+      success: false,
+    };
   }
 }
 
@@ -128,7 +106,20 @@ module.exports = {
   update: async (data) => {
     return await update(data);
   },
-  find: async (data) => {
-    return await find(data);
+  find: async () => {
+    return await find();
+  },
+  gameOver: async (data) => {
+    const playerData = await update(data);
+
+    const findData = await find();
+
+    return {
+      success: true,
+      result: {
+        topUsers: findData,
+        player: playerData.data,
+      },
+    };
   },
 };
