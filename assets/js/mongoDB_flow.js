@@ -16,11 +16,22 @@ db.once("open", (db) => console.log(`Connected to MonoDB`));
 
 async function register(data) {
   const dataObj = {
-    name: data.name,
+    email: data.email,
   };
 
   const findObj = await LeaderBoard.find(dataObj);
-  console.log(`findObj: `, findObj);
+  console.log(`register / findObj: `, findObj);
+
+  if (findObj.name !== data.name) {
+    await LeaderBoard.findOneAndUpdate(
+      {
+        email: data.email,
+      },
+      {
+        name: data.name,
+      }
+    );
+  }
 
   // The user already exits
   if (findObj.length !== 0) {
@@ -42,7 +53,7 @@ async function register(data) {
 async function update(data) {
   try {
     const filter = {
-      name: data.name,
+      email: data.email,
     };
 
     const update = {
@@ -52,11 +63,11 @@ async function update(data) {
     const findObj = await LeaderBoard.find(filter);
 
     if (data.score <= findObj[0].score && findObj.length === 1) {
-      return { name: findObj[0].name, score: findObj[0].score };
+      return { email: findObj[0].email, score: findObj[0].score };
     } else {
-      const doc = await LeaderBoard.findOneAndUpdate(filter, update);
+      await LeaderBoard.findOneAndUpdate(filter, update);
       return {
-        name: data.name,
+        email: data.email,
         score: data.score,
       };
     }
@@ -81,11 +92,10 @@ async function find() {
 
       resultObj.push({
         name: data.name,
+        email: data.email,
         score: data.score,
       });
     }
-
-    console.log(`resultObj: `, resultObj);
 
     return {
       success: true,

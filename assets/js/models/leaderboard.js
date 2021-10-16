@@ -5,6 +5,10 @@ let LeaderBoardSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+  email: {
+    type: String,
+    required: false,
+  },
   score: {
     type: Number,
     required: false,
