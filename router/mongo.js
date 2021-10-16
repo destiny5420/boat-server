@@ -15,9 +15,10 @@ router.get("/find", function (request, response) {
 
 router.post("/register", function (request, response) {
   const name = request.body.name;
+  const email = request.body.email;
 
   mongoDBFlow
-    .register({ name })
+    .register({ name, email })
     .then((result) => {
       response.status(200).send(result);
     })
@@ -27,11 +28,11 @@ router.post("/register", function (request, response) {
 });
 
 router.post("/update", function (request, response) {
-  const name = request.body.name;
+  const email = request.body.email;
   const score = request.body.score;
 
   mongoDBFlow
-    .update({ name, score })
+    .update({ email, score })
     .then((result) => {
       response.status(200).send(result);
     })
