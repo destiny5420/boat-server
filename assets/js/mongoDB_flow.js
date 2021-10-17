@@ -15,11 +15,9 @@ db.on("error", (err) => {
 db.once("open", (db) => console.log(`Connected to MonoDB`));
 
 async function register(data) {
-  const dataObj = {
+  const findObj = await LeaderBoard.find({
     email: data.email,
-  };
-
-  const findObj = await LeaderBoard.find(dataObj);
+  });
   console.log(`register / findObj: `, findObj);
 
   if (findObj.name !== data.name) {
@@ -41,7 +39,10 @@ async function register(data) {
     };
   }
 
-  const createObj = await LeaderBoard.create(dataObj);
+  const createObj = await LeaderBoard.create({
+    email: data.email,
+    name: data.name,
+  });
   console.log(`createObj: `, createObj);
 
   return {
@@ -84,7 +85,7 @@ async function find() {
     const sortQuery = {
       score: -1,
     };
-    const cursor = await LeaderBoard.find().sort(sortQuery).limit(3);
+    const cursor = await LeaderBoard.find().sort(sortQuery).limit(50);
 
     const resultObj = [];
     for (let i = 0; i < cursor.length; i++) {
