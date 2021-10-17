@@ -85,7 +85,7 @@ async function find() {
     const sortQuery = {
       score: -1,
     };
-    const cursor = await LeaderBoard.find().sort(sortQuery).limit(3);
+    const cursor = await LeaderBoard.find().sort(sortQuery).limit(50);
 
     const resultObj = [];
     for (let i = 0; i < cursor.length; i++) {
